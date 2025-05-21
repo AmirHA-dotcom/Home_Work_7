@@ -304,6 +304,7 @@ public:
                 free_doc = doc;
                 int day_index = (doc->get_number_of_patients() * doc->get_working_days().size() - free_times)/doc->get_number_of_patients();
                 free_day = doc->get_working_days()[day_index];
+                break;
             }
         }
         if (free_doc == nullptr)
