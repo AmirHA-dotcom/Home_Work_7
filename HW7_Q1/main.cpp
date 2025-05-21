@@ -303,8 +303,8 @@ bool input_handler(string line)
         vector<string> days;
         for (int i = 0; i < 7; i++)
         {
-            if (match[1 + i].matched)
-                days.push_back(match[4 + i]);
+            if (match[2 + i].matched)
+                days.push_back(match[2 + i]);
         }
         AHA.change_working_days(match[1], days);
         return true;
