@@ -12,7 +12,7 @@ using namespace std;
 regex add_doc_pattern(R"(^add doctor (\w+) (\w+) (\S+) (\S+)(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?\s*$)");
 regex change_NO_of_patients_pattern(R"(^change the number of patients of doctor (\w+) to (\S+)\s*$)");
 regex change_working_days_pattern(R"(^change the working days of doctor (\w+) to (\S+)(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?\s*$)");
-regex add_patient(R"(^add patient (\w+) (\w+)\s*$)");
+regex add_patient_pattern(R"(^add patient (\w+) (\w+)\s*$)");
 smatch match;
 
 // ------------- Exceptions ------------------
@@ -57,6 +57,23 @@ public:
         return "Error: no doctor with this name exist";
     }
 };
+class doc_with_spec_doesnt_exist : public exception
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Error: no doctor for this problem exist";
+    }
+};
+class doc_busy : public exception
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Error: doctors with this specialty are busy";
+    }
+};
+
 
 
 // --------------- Model ---------------
@@ -130,6 +147,11 @@ public:
             delete_that_day("wednesday");
         }
     }
+    void add_patient(Patient* patient, string day)
+    {
+        patients.emplace_back(patient, day);
+    }
+    vector<pair<Patient*, string>> get_patients() {return patients;}
 };
 
 // ------------ Controller ------------
@@ -166,6 +188,25 @@ private:
         }
         return true;
     }
+    int patient_index_finder_by_name(string& name)
+    {
+        for (int i = 0; i < patients.size(); i++)
+        {
+            if (name == patients[i]->get_name())
+                return i;
+        }
+        return -1;
+    }
+    vector<Doc*> find_docs_with_spec(string& speciality)
+    {
+        vector<Doc*> available_docs;
+        for (auto & doctor : doctors)
+        {
+            if (speciality == doctor->get_specialty())
+                available_docs.push_back(doctor);
+        }
+        return available_docs;
+    }
 public:
     void add_doc(string name, string specialty, int NO_of_patients, vector<string> working_days)
     {
@@ -196,7 +237,34 @@ public:
             throw doc_doesnt_exist();
         if (!week_day_valider(working_days))
             throw not_valid_day();
+        doctors[doc_index]->change_working_days(working_days);
         cout << "working days changed" << endl;
+    }
+    void add_patient(string name, string speciality)
+    {
+        vector<Doc*> available_docs = find_docs_with_spec(speciality);
+        if (available_docs.empty())
+            throw doc_with_spec_doesnt_exist();
+        Doc* free_doc = nullptr;
+        string free_day;
+        for (auto& doc : available_docs)
+        {
+            int free_times = doc->get_number_of_patients() * doc->get_working_days().size() - doc->get_patients().size();
+            if (free_times > 0)
+            {
+                free_doc = doc;
+                int day_index = (doc->get_number_of_patients() * doc->get_working_days().size() - free_times)/doc->get_number_of_patients();
+                free_day = doc->get_working_days()[day_index];
+            }
+        }
+        if (free_doc == nullptr)
+        {
+            throw doc_busy();
+        }
+        Patient* new_p = new Patient(name, speciality);
+        patients.push_back(new_p);
+        free_doc->add_patient(new_p, free_day);
+        cout << "appointment set on day " << free_day << " doctor " << free_doc->get_name() << endl;
     }
     ~Controller()
     {
@@ -239,6 +307,11 @@ bool input_handler(string line)
                 days.push_back(match[4 + i]);
         }
         AHA.change_working_days(match[1], days);
+        return true;
+    }
+    else if (regex_match(line, match, add_patient_pattern))
+    {
+        AHA.add_patient(match[1], match[2]);
         return true;
     }
     else
