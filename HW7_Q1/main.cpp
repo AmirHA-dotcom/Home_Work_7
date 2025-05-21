@@ -169,7 +169,6 @@ public:
                 patients.erase(patients.begin() + i);
                 break;
             }
-
         }
         return day;
     }
@@ -244,6 +243,19 @@ private:
         }
         return -1;
     }
+    void print_day_patients(string day)
+    {
+        int i =0;
+        cout << day << ":" << endl;
+        for (const auto& doctor : doctors)
+        {
+            for (const auto& patient : doctor->get_patients())
+            {
+                if (patient.second == day)
+                    cout << "patient" << ++i << " " << patient.first->get_name() << " : doctor " << doctor->get_name() << endl;
+            }
+        }
+    }
 public:
     void add_doc(string name, string specialty, int NO_of_patients, vector<string> working_days)
     {
@@ -303,10 +315,6 @@ public:
         free_doc->add_patient(new_p, free_day);
         cout << "appointment set on day " << free_day << " doctor " << free_doc->get_name() << endl;
     }
-    void show_patients_list()
-    {
-
-    }
     void delete_patient(string name)
     {
         int patient_index = patient_index_finder_by_name(name);
@@ -317,6 +325,14 @@ public:
             throw patient_doesnt_exist();
         string day = doctors[doc_index]->remove_patient_and_get_day(name);
         cout << "appointment deleted on day " << day << " doctor " << doctors[doc_index]->get_name() << endl;
+    }
+    void show_patients_list()
+    {
+        print_day_patients("saturday");
+        print_day_patients("sunday");
+        print_day_patients("monday");
+        print_day_patients("tuesday");
+        print_day_patients("wednesday");
     }
     ~Controller()
     {
