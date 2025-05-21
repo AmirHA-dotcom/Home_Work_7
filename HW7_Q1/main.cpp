@@ -173,6 +173,22 @@ public:
         return day;
     }
     vector<pair<Patient*, string>> get_patients() {return patients;}
+    int get_free_day_index()
+    {
+        for (int i = 0; i < working_days.size(); ++i)
+        {
+            int booked = count_if(
+                    patients.begin(),
+                    patients.end(),
+                    [&](const pair<Patient*, string>& entry) {
+                        return entry.second == working_days[i];
+                    }
+            );
+            if (booked < number_of_patients)
+                return i;
+        }
+        return -1;
+    }
 };
 
 // ------------ Controller ------------
@@ -296,21 +312,22 @@ public:
             throw doc_with_spec_doesnt_exist();
         Doc* free_doc = nullptr;
         string free_day;
+        int day_index = -1;
         for (auto& doc : available_docs)
         {
             int free_times = doc->get_number_of_patients() * doc->get_working_days().size() - doc->get_patients().size();
             if (free_times > 0)
             {
                 free_doc = doc;
-                int day_index = (doc->get_number_of_patients() * doc->get_working_days().size() - free_times)/doc->get_number_of_patients();
-                free_day = doc->get_working_days()[day_index];
+                day_index = doc->get_free_day_index();
                 break;
             }
         }
-        if (free_doc == nullptr)
+        if (day_index == -1)
         {
             throw doc_busy();
         }
+        free_day = free_doc->get_working_days()[day_index];
         Patient* new_p = new Patient(name, speciality);
         patients.push_back(new_p);
         free_doc->add_patient(new_p, free_day);
