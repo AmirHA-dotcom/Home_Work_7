@@ -165,7 +165,6 @@ public:
         {
             if (patients[i].first->get_name() == patient_name)
             {
-                delete patients[i].first;
                 day = patients[i].second;
                 patients.erase(patients.begin() + i);
                 break;
@@ -253,7 +252,7 @@ public:
             throw duplicate_doc();
         if (!week_day_valider(working_days))
             throw not_valid_day();
-        if (NO_of_patients < 0)
+        if (NO_of_patients <= 0)
             throw not_valid_number();
         doctors.push_back(new Doc(name, specialty, NO_of_patients, working_days));
         cout << "doctor " << name << " added with specialty " << specialty << " with " << NO_of_patients << " patients" << endl;
@@ -314,6 +313,8 @@ public:
         if (patient_index == -1)
             throw patient_doesnt_exist();
         int doc_index = doc_index_finder_by_patient_name(name);
+        if (doc_index == -1)
+            throw patient_doesnt_exist();
         string day = doctors[doc_index]->remove_patient_and_get_day(name);
         cout << "appointment deleted on day " << day << " doctor " << doctors[doc_index]->get_name() << endl;
     }
