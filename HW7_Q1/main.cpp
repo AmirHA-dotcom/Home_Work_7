@@ -13,6 +13,7 @@ regex add_doc_pattern(R"(^add doctor (\w+) (\w+) (\S+) (\S+)(?: (\S+))?(?: (\S+)
 regex change_NO_of_patients_pattern(R"(^change the number of patients of doctor (\w+) to (\S+)\s*$)");
 regex change_working_days_pattern(R"(^change the working days of doctor (\w+) to (\S+)(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?(?: (\S+))?\s*$)");
 regex add_patient_pattern(R"(^add patient (\w+) (\w+)\s*$)");
+regex delete_patient_pattern("^delete patient (\\w+)\\s*$");
 smatch match;
 
 // ------------- Exceptions ------------------
@@ -73,8 +74,14 @@ public:
         return "Error: doctors with this specialty are busy";
     }
 };
-
-
+class patient_doesnt_exist : public exception
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Error: no patient with this name exist";
+    }
+};
 
 // --------------- Model ---------------
 
@@ -117,8 +124,8 @@ public:
             int d = number_of_patients - NO;
             for (int i = 0; i < d; i++)
             {
-                if (patients[number_of_patients - i].first != nullptr)
-                    patients.erase(patients.begin() + number_of_patients - i);
+                if (patients[number_of_patients - i - 1].first != nullptr)
+                    patients.erase(patients.begin() + number_of_patients - i - 1);
             }
         }
         number_of_patients = NO;
@@ -150,6 +157,22 @@ public:
     void add_patient(Patient* patient, string day)
     {
         patients.emplace_back(patient, day);
+    }
+    string remove_patient_and_get_day(string patient_name)
+    {
+        string day;
+        for (int i = 0; i < patients.size(); i++)
+        {
+            if (patients[i].first->get_name() == patient_name)
+            {
+                delete patients[i].first;
+                day = patients[i].second;
+                patients.erase(patients.begin() + i);
+                break;
+            }
+
+        }
+        return day;
     }
     vector<pair<Patient*, string>> get_patients() {return patients;}
 };
@@ -206,6 +229,21 @@ private:
                 available_docs.push_back(doctor);
         }
         return available_docs;
+    }
+    int doc_index_finder_by_patient_name(string& name)
+    {
+        for (int i = 0; i < doctors.size(); i++)
+        {
+            vector<pair<Patient*, string>> patient_list = doctors[i]->get_patients();
+            for (auto& p : patient_list)
+            {
+                if (p.first->get_name() == name)
+                {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 public:
     void add_doc(string name, string specialty, int NO_of_patients, vector<string> working_days)
@@ -266,6 +304,19 @@ public:
         free_doc->add_patient(new_p, free_day);
         cout << "appointment set on day " << free_day << " doctor " << free_doc->get_name() << endl;
     }
+    void show_patients_list()
+    {
+
+    }
+    void delete_patient(string name)
+    {
+        int patient_index = patient_index_finder_by_name(name);
+        if (patient_index == -1)
+            throw patient_doesnt_exist();
+        int doc_index = doc_index_finder_by_patient_name(name);
+        string day = doctors[doc_index]->remove_patient_and_get_day(name);
+        cout << "appointment deleted on day " << day << " doctor " << doctors[doc_index]->get_name() << endl;
+    }
     ~Controller()
     {
         for (Doc* doc : doctors)
@@ -312,6 +363,16 @@ bool input_handler(string line)
     else if (regex_match(line, match, add_patient_pattern))
     {
         AHA.add_patient(match[1], match[2]);
+        return true;
+    }
+    else if (regex_match(line, match, delete_patient_pattern))
+    {
+        AHA.delete_patient(match[1]);
+        return true;
+    }
+    else if (line == "patients list")
+    {
+        AHA.show_patients_list();
         return true;
     }
     else
