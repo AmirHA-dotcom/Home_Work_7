@@ -213,24 +213,63 @@ class View
 private:
     Controller AHA;
 public:
-    static void DO_EVERYTHING(string command)
+    void DO_EVERYTHING(string command)
     {
+        if (regex_match(command, match, add_graph_PAT))
+        {
+            AHA.create_graph(match[1]);
+        }
+        else if (regex_match(command, match, add_vertex_PAT))
+        {
+            AHA.add_vertex(match[1], match[2], stod(match[3]));
+        }
+        else if (regex_match(command, match, add_edge_PAT))
+        {
+            AHA.add_edge(match[1], match[2], match[3], stod(match[4]));
+        }
+        else if (regex_match(command, match, edit_vertex_weight_PAT))
+        {
+            AHA.edit_vertex_weight(match[1], match[2], stod(match[3]));
+        }
+        else if (regex_match(command, match, edit_edge_weight_PAT))
+        {
+            AHA.edit_edge_weight(match[1], match[2], match[3], stod(match[4]));
+        }
+        else if (regex_match(command, match, delete_vertex_PAT))
+        {
+            AHA.delete_vertex(match[1], match[2]);
+        }
+        else if (regex_match(command, match, delete_edge_PAT))
+        {
+            AHA.delete_edge(match[1], match[2], match[3]);
+        }
+        else if (regex_match(command, match, show_INFO_PAT))
+        {
+            AHA.show_graph(match[1]);
+        }
+        else if (regex_match(command, match, calculate_distance_PAT))
+        {
 
+        }
+        else
+            throw ERROR();
     }
 };
 
 // ---------- MAIN ----------
 int main()
 {
+    View AHA;
     string command;
     int how_many;
     cin >> how_many;
+    getline(cin, command);
     for (int i = 0; i < how_many; i++)
     {
         getline(cin, command);
         try
         {
-            View::DO_EVERYTHING(command);
+            AHA.DO_EVERYTHING(command);
         }
         catch (const exception& e)
         {
